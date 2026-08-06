@@ -2,12 +2,29 @@
   "name": "@zhadev/dramabox",
   "version": "0.0.1",
   "description": "Unofficial Dramabox Scrapers.",
+  "keywords": [
+    "dramabox",
+    "dracin",
+    "scraper",
+    "anime",
+    "parser",
+    "api",
+    "typescript",
+    "zhadevv"
+  ],
+  "homepage": "https://github.com/zhadevv/dramabox#readme",
+  "bugs": {
+    "url": "https://github.com/zhadevv/dramabox/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhadevv/dramabox.git"
+  },
+  "license": "MIT",
+  "author": "zhadevv",
   "main": "dist/cjs/Dramabox.js",
-  "module": "dist/esm/Dramabox.js",
-  "types": "dist/types/Dramabox.d.ts",
   "browser": "dist/javascript/browser.js",
-  "unpkg": "dist/javascript/browser.min.js",
-  "jsdelivr": "dist/javascript/browser.min.js",
+  "types": "dist/types/Dramabox.d.ts",
   "files": [
     "dist/",
     "README.md",
@@ -27,29 +44,6 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\""
   },
-  "keywords": [
-    "dramabox",
-    "dracin",
-    "scraper",
-    "anime",
-    "parser",
-    "api",
-    "typescript",
-    "zhadevv"
-  ],
-  "author": "zhadevv",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/zhadevv/dramabox.git"
-  },
-  "bugs": {
-    "url": "https://github.com/zhadevv/dramabox/issues"
-  },
-  "homepage": "https://github.com/zhadevv/dramabox#readme",
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
@@ -68,8 +62,14 @@
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  }
+  },
+  "module": "dist/esm/Dramabox.js",
+  "unpkg": "dist/javascript/browser.min.js",
+  "jsdelivr": "dist/javascript/browser.min.js"
 }
