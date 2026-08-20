@@ -1,75 +1,72 @@
 {
   "name": "@zhadev/dramabox",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Unofficial Dramabox Scrapers.",
-  "keywords": [
-    "dramabox",
-    "dracin",
-    "scraper",
-    "anime",
-    "parser",
-    "api",
-    "typescript",
-    "zhadevv"
-  ],
-  "homepage": "https://github.com/zhadevv/dramabox#readme",
-  "bugs": {
-    "url": "https://github.com/zhadevv/dramabox/issues"
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "browser": "dist/browser.min.js",
+  "unpkg": "dist/browser.min.js",
+  "jsdelivr": "dist/browser.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs",
+      "browser": "./dist/browser.min.js",
+      "default": "./dist/index.mjs"
+    }
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/zhadevv/dramabox.git"
-  },
-  "license": "MIT",
-  "author": "zhadevv",
-  "main": "dist/cjs/Dramabox.js",
-  "browser": "dist/javascript/browser.js",
-  "types": "dist/types/Dramabox.d.ts",
   "files": [
     "dist/",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run clean && npm run build:types && npm run build:cjs && npm run build:esm && npm run build:browser",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types",
-    "build:cjs": "tsc --module commonjs --target es2020 --outDir dist/cjs",
-    "build:esm": "tsc --module es2020 --target es2020 --outDir dist/esm",
-    "build:browser": "npm run build:browser:dev && npm run build:browser:prod",
-    "build:browser:dev": "esbuild src/Dramabox.ts --bundle --platform=node --target=es2020 --outfile=dist/javascript/browser.js --global-name=DramaboxScraper",
-    "build:browser:prod": "esbuild src/Dramabox.ts --bundle --platform=node --target=es2020 --minify --outfile=dist/javascript/browser.min.js --global-name=DramaboxScraper",
+    "build": "npm run clean && node esbuild.config.js",
+    "build:esm": "node esbuild.config.js --format=esm",
+    "build:cjs": "node esbuild.config.js --format=cjs",
+    "build:browser": "node esbuild.config.js --format=iife",
     "clean": "rimraf dist",
-    "test": "npm run build",
+    "test": "node test.js",
     "prepublishOnly": "npm run build && npm test",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "lint": "eslint src/**/*.js",
+    "format": "prettier --write \"src/**/*.js\""
   },
-  "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.51.0",
-    "@typescript-eslint/parser": "^8.51.0",
-    "axios": "^1.13.2",
-    "cheerio": "^1.1.2",
-    "https-proxy-agent": "^7.0.6",
-    "node-cache": "^5.1.2",
-    "socks-proxy-agent": "^8.0.5"
+  "keywords": [
+    "dramabox",
+    "dracin",
+    "scraper",
+    "parser",
+    "api",
+    "zhadevv"
+  ],
+  "author": "zhadevv",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhadevv/dramabox.git"
   },
-  "devDependencies": {
-    "@types/axios": "^0.9.36",
-    "@types/cheerio": "^0.22.35",
-    "esbuild": "^0.27.2",
-    "eslint": "^9.39.2",
-    "prettier": "^3.7.4",
-    "rimraf": "^6.1.2",
-    "typescript": "^5.9.3"
+  "bugs": {
+    "url": "https://github.com/zhadevv/dramabox/issues"
   },
+  "homepage": "https://github.com/zhadevv/dramabox#readme",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "node-cache": "5.1.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  },
-  "module": "dist/esm/Dramabox.js",
-  "unpkg": "dist/javascript/browser.min.js",
-  "jsdelivr": "dist/javascript/browser.min.js"
+  }
 }

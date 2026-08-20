@@ -60,3 +60,6 @@ public
 .vscode-test
 tmp/
 temp/
+test-all.js
+test-token.js
+package-lock.json

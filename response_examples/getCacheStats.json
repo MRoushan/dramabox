@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "creator": "zhadevv",
+  "data": {
+    "hits": 6,
+    "misses": 29,
+    "keys": 21,
+    "ksize": 350,
+    "vsize": 7280
+  },
+  "metadata": {},
+  "message": null
+}

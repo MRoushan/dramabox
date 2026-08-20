@@ -5,10 +5,12 @@
   <img src="https://img.shields.io/badge/types-TypeScript-blue.svg" alt="TypeScript">
   <img src="https://img.shields.io/npm/v/@zhadev/dramabox" alt="npm version">
   <img src="https://img.shields.io/npm/dt/@zhadev/dramabox" alt="npm downloads">
-  <img src="https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen" alt="node version">
+  <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen" alt="node version">
 </p>
 
 **Unofficial Dramabox API Client for Chinese Dramas!**
+
+> **v0.0.2** is a full rewrite: modular ESM-first architecture, Node's native `https` module (with a WAF-friendly TLS profile) instead of `axios`, and a bunch of new endpoints (`getForYou`, `getDubIndo`, `getRandomDrama`, `getComingSoon`, `getPopularSearch`, `getTrending`, `getHomepage`, `getRelatedDramas`, `getEpisodeDetails`, `advancedSearch`, `getDramaDetailV2`). See [CHANGELOG.md](./CHANGELOG.md) for the full list.
 
 ### Features
 - **Complete API Coverage** - Access to all Dramabox endpoints
@@ -34,33 +36,36 @@ pnpm add @zhadev/dramabox
 
 Node.js / Typescript
 ```javascript
-// ES Module
-import DramaboxScraper from '@zhadev/dramabox';
+// ES Module (recommended)
+import DramaboxClient from '@zhadev/dramabox';
+// or, if you need the named export too:
+import { DramaboxClient } from '@zhadev/dramabox';
 
 // CommonJS
-const DramaboxScraper = require('@zhadev/dramabox').default;
+const DramaboxClient = require('@zhadev/dramabox').default;
 
 // Initialize
-const scraper = new DramaboxScraper();
+const scraper = new DramaboxClient();
 ```
 
 Browser (via CDN)
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@zhadev/dramabox/dist/javascript/browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zhadev/dramabox/dist/browser.min.js"></script>
 <script>
-  const scraper = new DramaboxScraper();
-  
+  const scraper = new Dramabox.DramaboxClient();
+
   scraper.getLatest(1).then(result => {
     console.log(result.data.results);
   });
 </script>
 ```
+> The IIFE bundle exposes a global `Dramabox` object (`globalName: 'Dramabox'`), so grab the client via `Dramabox.DramaboxClient`, not a bare `DramaboxScraper`.
 
 With Configuration
 ```javascript
-import DramaboxScraper from '@zhadev/dramabox';
+import DramaboxClient from '@zhadev/dramabox';
 
-const scraper = new DramaboxScraper({
+const scraper = new DramaboxClient({
   language: 'in',          // Language code: 'in', 'en', etc.
   version: '470',          // API version
   timeout: 30000,          // Request timeout in ms
@@ -88,8 +93,8 @@ interface ScraperConfig {
 
 - **All Methods**
 ```javascript
-// Token Generation
-generateToken(); // returns token generation (bearer token, device id, android id, etc)
+// Token
+getToken(); // returns cached or freshly generated token (bearer token, device id, android id, etc)
 
 // Latest Dramas
 getLatest(pageNo: number); // returns latest dramas
@@ -99,54 +104,41 @@ getVip(); // returns vip dramas
 
 // Drama Detail
 getDramaDetail(bookId: string); // returns detail drama with recommendations
+getDramaDetailV2(bookId: string); // returns drama detail v2 (webfic API)
 
 // Drama Chapters/Episodes
 getChapters(bookId: string); // returns episode list
+getEpisodeDetails(bookId: string, episodeIndex: number); // returns detailed episode info with next/prev
 
 // Streaming URL
-getStreamUrl(bookId: string, episode: number); // returns drama streaming url (mp4 and m3u8)
+getStreamUrl(bookId: string, episode: number); // returns drama streaming url (mp4 only - m3u8 relied on a third-party service that's no longer up)
 
 // Drama List
 getDramaList(pageNo: number, pageSize: number); // returns list drama with pagination
 
 // Categories
 getCategories(pageNo: number, pageSize: number); // returns list category
-
-// Drama by Category
 getBooksByCategory(typeTwoId: number, pageNo: number, pageSize: number); // returns drama list by category id
 
-// Recommended Dramas
+// Recommendations & Discovery
 getRecommendedBooks(); // returns recommended dramas
+getForYou(pageNo: number); // returns personalized recommendations
+getRelatedDramas(bookId: string); // returns related/recommended dramas
+getRandomDrama(); // returns a random drama pick
+getTrending(); // returns trending dramas
+getComingSoon(); // returns upcoming dramas
+getDubIndo(classify: string, page: number, pageSize: number); // returns Indonesian dubbed dramas
+getHomepage(); // returns combined homepage data (latest, trending, recommended)
 
-// Search Index
+// Search
 searchDramaIndex(); // returns search index/hot videos
-
-// Search Drama
 searchDrama(keyword: string, pageNo: number, pageSize: number); // returns search results for drama
-
-// Search Suggestions
 suggestSearch(keyword: string); // returns search suggestions
+getPopularSearch(); // returns popular search terms
+advancedSearch(keyword?: string, filters?: object); // returns advanced search results
 
 // Batch Download
 batchDownload(bookId: string); // returns all episodes for batch download
-
-// Drama Detail V2
-getDramaDetailV2(bookId: string); // returns drama detail v2 with webfic API
-
-// Advanced Search
-advancedSearch(keyword?: string, filters?: any); // returns advanced search results
-
-// Trending Dramas
-getTrending(); // returns trending dramas
-
-// Homepage Data
-getHomepage(); // returns combined homepage data (latest, trending, recommended)
-
-// Related Dramas
-getRelatedDramas(bookId: string); // returns related/recommended dramas
-
-// Episode Details
-getEpisodeDetails(bookId: string, episodeIndex: number); // returns detailed episode info with streaming
 
 // Cache Operations
 clearCache(); // clears all cache
@@ -227,7 +219,7 @@ Latest
 
 Get Latest Dramas
 ```javascript
-const scraper = new DramaboxScraper();
+const scraper = new DramaboxClient();
 
 // Get first page of latest dramas
 const result = await scraper.getLatest(1);
@@ -276,7 +268,7 @@ Get Stream URL
 const stream = await scraper.getStreamUrl('41000122939', 1);
 if (stream.success) {
   console.log('MP4:', stream.data.data.chapter.video.mp4);
-  console.log('M3U8:', stream.data.data.chapter.video.m3u8);
+  // m3u8 is no longer populated - the service that provided it is down
 }
 ```
 
@@ -293,9 +285,9 @@ if (batch.success) {
 
 TypeScript Example
 ```typescript
-import DramaboxScraper, { ApiResponse, DramaItem } from '@zhadev/dramabox';
+import DramaboxClient, { ApiResponse, DramaItem } from '@zhadev/dramabox';
 
-const scraper = new DramaboxScraper();
+const scraper = new DramaboxClient();
 
 async function displayDramaInfo(bookId: string): Promise<void> {
   const detail: ApiResponse = await scraper.getDramaDetail(bookId);
@@ -380,10 +372,10 @@ scraper.clearCache();
 ### Available Languages
 ```javascript
 // Indonesian
-const scraperID = new DramaboxScraper({ language: 'in' });
+const scraperID = new DramaboxClient({ language: 'in' });
 
 // English
-const scraperEN = new DramaboxScraper({ language: 'en' });
+const scraperEN = new DramaboxClient({ language: 'en' });
 
 // Available:
 // en, in, zh, zhHans, ko, ja, tl, th, ar, pt, fr, es
@@ -391,7 +383,7 @@ const scraperEN = new DramaboxScraper({ language: 'en' });
 
 ### Rate Limiting Best Practices
 ```javascript
-const scraper = new DramaboxScraper({
+const scraper = new DramaboxClient({
   requestDelay: 2000, // 2 seconds between requests
   maxRetries: 3      // Retry failed requests
 });
@@ -413,10 +405,10 @@ Supported Platforms
 Build Targets
 ```json
 {
-  "cjs": "CommonJS for Node.js",
-  "esm": "ES Modules for modern bundlers",
-  "types": "TypeScript definitions",
-  "browser": "UMD bundle for browsers"
+  "cjs": "dist/index.cjs — CommonJS for Node.js",
+  "esm": "dist/index.mjs — ES Modules for modern bundlers",
+  "types": "dist/index.d.ts — TypeScript definitions",
+  "browser": "dist/browser.js and dist/browser.min.js — IIFE bundle for browsers (global: Dramabox)"
 }
 ```
 
@@ -424,14 +416,20 @@ Build Targets
 ```
 @zhadev/dramabox/
 ├── src/
-│   └── Dramabox.ts         # Main library source
-├── dist/
-│   ├── cjs/                # CommonJS build
-│   ├── esm/                # ES Module build
-│   ├── types/              # TypeScript definitions
-│   └── javascript/         # Browser bundles
+│   ├── index.js             # Node/bundler entry (ESM + CJS)
+│   ├── browser.js           # Browser (IIFE) entry
+│   ├── core/                # DramaboxClient, endpoints, base class
+│   ├── client/               # HTTP client (native https)
+│   ├── utils/                # config, token, signing helpers
+│   └── types/                # TypeScript definitions
+├── dist/                     # Build output (generated, not committed)
+│   ├── index.mjs
+│   ├── index.cjs
+│   ├── index.d.ts
+│   ├── browser.js
+│   └── browser.min.js
+├── esbuild.config.js         # Build script (esm / cjs / iife)
 ├── package.json
-├── tsconfig.json
 └── README.md
 ```
 
@@ -503,7 +501,7 @@ SOFTWARE.
 
 ### Acknowledgements
 - Dramabox
-- Axios
+- Undici
 - Node Cache
 - Crypto
 - All contributors and users
