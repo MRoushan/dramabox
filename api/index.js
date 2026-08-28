@@ -1,85 +1,183 @@
-const DramaboxClient = require("@zhadev/dramabox").default;
+import DramaboxClient from "../src/index.js";
 
 const client = new DramaboxClient({
   language: "en",
-  version: "470",
   timeout: 30000,
   maxRetries: 3,
-  cacheTTL: 300,
   requestDelay: 1000
 });
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    const { path, keyword, page = 1, bookId, episode } = req.query;
-
-    let result;
+    const { path } = req.query;
 
     switch (path) {
       case "latest":
-        result = await client.getLatest(Number(page));
-        break;
+        return res.status(200).json(
+          await client.getLatest(Number(req.query.page || 1))
+        );
+
+      case "vip":
+        return res.status(200).json(
+          await client.getVip()
+        );
 
       case "homepage":
-        result = await client.getHomepage();
-        break;
+        return res.status(200).json(
+          await client.getHomepage()
+        );
 
       case "trending":
-        result = await client.getTrending();
-        break;
-
-      case "search":
-        result = await client.searchDrama(
-          keyword || "",
-          Number(page),
-          20
+        return res.status(200).json(
+          await client.getTrending()
         );
-        break;
 
-      case "detail":
-        result = await client.getDramaDetail(bookId);
-        break;
-
-      case "chapters":
-        result = await client.getChapters(bookId);
-        break;
-
-      case "episode":
-        result = await client.getEpisodeDetails(
-          bookId,
-          Number(episode)
+      case "recommend":
+        return res.status(200).json(
+          await client.getRecommendedBooks()
         );
-        break;
 
-      case "stream":
-        result = await client.getStreamUrl(
-          bookId,
-          Number(episode)
+      case "foryou":
+        return res.status(200).json(
+          await client.getForYou(Number(req.query.page || 1))
         );
-        break;
+
+      case "comingsoon":
+        return res.status(200).json(
+          await client.getComingSoon()
+        );
+
+      case "popular":
+        return res.status(200).json(
+          await client.getPopularSearch()
+        );
 
       case "categories":
-        result = await client.getCategories(
-          Number(page),
-          50
+        return res.status(200).json(
+          await client.getCategories(
+            Number(req.query.page || 1),
+            Number(req.query.pageSize || 30)
+          )
         );
-        break;
+
+      case "category":
+        return res.status(200).json(
+          await client.getBooksByCategory(
+            Number(req.query.typeTwoId || 0),
+            Number(req.query.page || 1),
+            Number(req.query.pageSize || 10)
+          )
+        );
+
+      case "search":
+        return res.status(200).json(
+          await client.searchDrama(
+            req.query.keyword,
+            Number(req.query.page || 1),
+            Number(req.query.pageSize || 20)
+          )
+        );
+
+      case "suggest":
+        return res.status(200).json(
+          await client.suggestSearch(req.query.keyword)
+        );
+
+      case "detail":
+        return res.status(200).json(
+          await client.getDramaDetail(req.query.bookId)
+        );
+
+      case "chapters":
+        return res.status(200).json(
+          await client.getChapters(req.query.bookId)
+        );
+
+      case "episode":
+        return res.status(200).json(
+          await client.getEpisodeDetails(
+            req.query.bookId,
+            Number(req.query.episode)
+          )
+        );
+
+      case "stream":
+        return res.status(200).json(
+          await client.getStreamUrl(
+            req.query.bookId,
+            Number(req.query.episode)
+          )
+        );
+
+      case "related":
+        return res.status(200).json(
+          await client.getRelatedDramas(req.query.bookId)
+        );
+
+      case "random":
+        return res.status(200).json(
+          await client.getRandomDrama()
+        );
+
+      case "batch":
+        return res.status(200).json(
+          await client.batchDownload(req.query.bookId)
+        );
+
+      case "ping":
+        return res.status(200).json(
+          await client.ping()
+        );
+
+      case "config":
+        return res.status(200).json(
+          client.getConfig()
+        );
+
+      case "cache":
+        return res.status(200).json(
+          client.getCacheStats()
+        );
 
       default:
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid path. Use latest, homepage, trending, search, detail, chapters, episode, stream, or categories."
+          error: "Unknown endpoint",
+          available: [
+            "latest",
+            "vip",
+            "homepage",
+            "trending",
+            "recommend",
+            "foryou",
+            "comingsoon",
+            "popular",
+            "categories",
+            "category",
+            "search",
+            "suggest",
+            "detail",
+            "chapters",
+            "episode",
+            "stream",
+            "related",
+            "random",
+            "batch",
+            "ping",
+            "config",
+            "cache"
+          ]
         });
     }
-
-    return res.status(200).json(result);
   } catch (error) {
-    console.error(error);
+    console.error("API ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      error: error.message || "Internal server error"
+      error: {
+        message: error?.message || "Internal server error",
+        name: error?.name || "Error"
+      }
     });
   }
-};
+}
