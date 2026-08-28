@@ -142,31 +142,35 @@ export class DramaboxClient extends BaseClient {
                 bookId
             });
 
-            const bookData = data?.data?.book;
+            // chapterv2/detail used to return data.book. Current schema
+            // dropped that object and only returns chapters + recommendList.
+            let bookData = data?.data?.book;
             if (!bookData) {
-                // Not every bookId is indexed on this endpoint even though
-                // it exists elsewhere in the catalog (e.g. it shows up in
-                // listings, or chapterv2/batch/load works fine for it).
-                // The v2 (webfic) detail endpoint covers a different slice
-                // of the catalog, so fall back to that before giving up.
+                bookData = await this.getBookMetaFromBatchLoad(bookId);
+            }
+
+            if (!bookData) {
                 return this.getDramaDetailFromV2Fallback(bookId, cacheKey);
             }
 
             const detail = {
-                bookId: bookData.bookId,
+                bookId: bookData.bookId || bookId,
                 bookName: bookData.bookName,
-                coverWap: bookData.coverWap,
+                coverWap: bookData.coverWap || bookData.bookCover || bookData.cover,
                 introduction: bookData.introduction,
                 tagV3s: bookData.tagV3s || [],
                 chapterCount: bookData.chapterCount,
                 playCount: bookData.playCount,
-                isEnd: bookData.isEnd,
+                isEnd: bookData.isEnd ?? bookData.bookStatus,
                 payChapterNum: bookData.payChapterNum,
-                totalEpisodes: bookData.totalEpisodes,
+                totalEpisodes: bookData.totalEpisodes ?? bookData.chapterCount,
                 corner: bookData.corner
             };
 
-            const recommendList = data?.data?.recommendList?.records || [];
+            const rawRecs = data?.data?.recommendList;
+            const recommendList = Array.isArray(rawRecs)
+                ? rawRecs
+                : (rawRecs?.records || []);
             const recommendations = recommendList.map((item) => ({
                 id: item.bookId,
                 bookId: item.bookId,
@@ -191,6 +195,43 @@ export class DramaboxClient extends BaseClient {
         } catch (error) {
             return this.handleError(error, 'fetch drama detail');
         }
+    }
+
+    async getBookMetaFromBatchLoad(bookId) {
+        const batch = await this.sapiRequest(Endpoints.BATCH_LOAD, {
+            boundaryIndex: 0,
+            comingPlaySectionId: -1,
+            index: 1,
+            currencyPlaySource: 'discover_new_rec_new',
+            needEndRecommend: 0,
+            currencyPlaySourceName: '',
+            preLoad: false,
+            rid: '',
+            pullCid: '',
+            loadDirection: 0,
+            bookId
+        });
+
+        const b = batch?.data;
+        if (!b || (!b.bookId && !b.bookName)) {
+            return null;
+        }
+
+        return {
+            bookId: b.bookId || bookId,
+            bookName: b.bookName,
+            coverWap: b.bookCover || b.coverWap,
+            bookCover: b.bookCover,
+            introduction: b.introduction,
+            tagV3s: b.tagV3s || [],
+            chapterCount: b.chapterCount,
+            playCount: b.playCount,
+            isEnd: b.isEnd,
+            bookStatus: b.bookStatus,
+            payChapterNum: b.payChapterNum,
+            totalEpisodes: b.chapterCount,
+            corner: b.corner
+        };
     }
 
     async getDramaDetailFromV2Fallback(bookId, cacheKey) {
