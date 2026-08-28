@@ -7,9 +7,26 @@ const client = new DramaboxClient({
   requestDelay: 1000
 });
 
+function resolvePath(req) {
+  const raw = req.query?.path;
+  if (raw) {
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return String(value).split("/")[0].split("?")[0];
+  }
+
+  const urlPath = String(req.url || "").split("?")[0];
+  const match = urlPath.match(/\/api\/([^/]+)/);
+  if (match && match[1] && match[1] !== "index.js") {
+    return match[1];
+  }
+
+  return undefined;
+}
+
 export default async function handler(req, res) {
   try {
-    const { path } = req.query;
+    const path = resolvePath(req);
+    const bookId = req.query.bookId || req.query.id;
 
     switch (path) {
       case "latest":
@@ -85,18 +102,18 @@ export default async function handler(req, res) {
 
       case "detail":
         return res.status(200).json(
-          await client.getDramaDetail(req.query.bookId)
+          await client.getDramaDetail(bookId)
         );
 
       case "chapters":
         return res.status(200).json(
-          await client.getChapters(req.query.bookId)
+          await client.getChapters(bookId)
         );
 
       case "episode":
         return res.status(200).json(
           await client.getEpisodeDetails(
-            req.query.bookId,
+            bookId,
             Number(req.query.episode)
           )
         );
@@ -104,14 +121,14 @@ export default async function handler(req, res) {
       case "stream":
         return res.status(200).json(
           await client.getStreamUrl(
-            req.query.bookId,
+            bookId,
             Number(req.query.episode)
           )
         );
 
       case "related":
         return res.status(200).json(
-          await client.getRelatedDramas(req.query.bookId)
+          await client.getRelatedDramas(bookId)
         );
 
       case "random":
@@ -121,7 +138,7 @@ export default async function handler(req, res) {
 
       case "batch":
         return res.status(200).json(
-          await client.batchDownload(req.query.bookId)
+          await client.batchDownload(bookId)
         );
 
       case "ping":
