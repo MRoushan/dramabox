@@ -17,8 +17,14 @@ export async function sapiRequest(endpoint, payload = {}, language = config.defa
         throw error;
     }
 
-    const headers = buildHeaders(tokenData, timestamp, payload, language);
-    const url = `${config.baseUrl}${endpoint}?timestamp=${timestamp}`;
+const headers = buildHeaders(tokenData, timestamp, payload, language);
+const url = `${config.baseUrl}${endpoint}?timestamp=${timestamp}`;
+
+console.log('SAPI REQUEST');
+console.log('Endpoint:', endpoint);
+console.log('Language:', language);
+console.log('Payload:', JSON.stringify(payload));
+console.log('URL:', url);
 
     try {
         const response = await httpRequestWithRetry(url, {
