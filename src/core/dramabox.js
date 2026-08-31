@@ -125,77 +125,106 @@ export class DramaboxClient extends BaseClient {
     }
 
     async getDramaDetail(bookId) {
+    try {
+        if (!bookId) {
+            console.log('[detail] missing bookId');
+            return this.buildResponse(false, null, 'Book ID is required');
+        }
+
+        console.log('[detail] start', bookId);
+
+        const cacheKey = this.getCacheKey('detail', bookId);
+        const cached = this.getCached(cacheKey);
+        if (cached) {
+            console.log('[detail] cache hit', bookId);
+            return this.buildResponse(true, cached);
+        }
+
+        let data = null;
         try {
-            if (!bookId) {
-                return this.buildResponse(false, null, 'Book ID is required');
-            }
-
-            const cacheKey = this.getCacheKey('detail', bookId);
-            const cached = this.getCached(cacheKey);
-            if (cached) {
-                return this.buildResponse(true, cached);
-            }
-
-            const data = await this.sapiRequest(Endpoints.DETAIL, {
+            console.log('[detail] calling chapterv2/detail', bookId);
+            data = await this.sapiRequest(Endpoints.DETAIL, {
                 needRecommend: true,
                 from: 'book_album',
                 bookId
             });
-
-            // chapterv2/detail used to return data.book. Current schema
-            // dropped that object and only returns chapters + recommendList.
-            let bookData = data?.data?.book;
-            if (!bookData) {
-                bookData = await this.getBookMetaFromBatchLoad(bookId);
-            }
-
-            if (!bookData) {
-                return this.getDramaDetailFromV2Fallback(bookId, cacheKey);
-            }
-
-            const detail = {
-                bookId: bookData.bookId || bookId,
-                bookName: bookData.bookName,
-                coverWap: bookData.coverWap || bookData.bookCover || bookData.cover,
-                introduction: bookData.introduction,
-                tagV3s: bookData.tagV3s || [],
-                chapterCount: bookData.chapterCount,
-                playCount: bookData.playCount,
-                isEnd: bookData.isEnd ?? bookData.bookStatus,
-                payChapterNum: bookData.payChapterNum,
-                totalEpisodes: bookData.totalEpisodes ?? bookData.chapterCount,
-                corner: bookData.corner
-            };
-
-            const rawRecs = data?.data?.recommendList;
-            const recommendList = Array.isArray(rawRecs)
-                ? rawRecs
-                : (rawRecs?.records || []);
-            const recommendations = recommendList.map((item) => ({
-                id: item.bookId,
-                bookId: item.bookId,
-                bookName: item.bookName,
-                cover: item.cover,
-                coverWap: item.coverWap,
-                introduction: item.introduction,
-                chapterCount: item.chapterCount,
-                playCount: item.playCount,
-                tagV3s: item.tagV3s || [],
-                status: item.isEnd === 1 ? 'completed' : 'ongoing',
-                corner: item.corner
-            }));
-
-            const responseData = {
-                detail,
-                recommendations
-            };
-
-            this.setCached(cacheKey, responseData, 600);
-            return this.buildResponse(true, responseData);
+            console.log('[detail] DETAIL ok', {
+                hasBook: Boolean(data?.data?.book),
+                hasRecommend: Boolean(data?.data?.recommendList),
+                keys: data?.data ? Object.keys(data.data) : []
+            });
         } catch (error) {
-            return this.handleError(error, 'fetch drama detail');
+            console.log('[detail] DETAIL threw', error.message);
+            data = null;
         }
+
+        let bookData = data?.data?.book || null;
+        if (!bookData) {
+            console.log('[detail] no data.book — trying batch/load', bookId);
+            try {
+                bookData = await this.getBookMetaFromBatchLoad(bookId);
+                console.log('[detail] batch/load', {
+                    ok: Boolean(bookData),
+                    bookName: bookData?.bookName,
+                    chapterCount: bookData?.chapterCount
+                });
+            } catch (error) {
+                console.log('[detail] batch/load threw', error.message);
+                bookData = null;
+            }
+        }
+
+        if (!bookData) {
+            console.log('[detail] falling back to webfic v2', bookId);
+            return this.getDramaDetailFromV2Fallback(bookId, cacheKey);
+        }
+
+        const detail = {
+            bookId: bookData.bookId || bookId,
+            bookName: bookData.bookName,
+            coverWap: bookData.coverWap || bookData.bookCover || bookData.cover,
+            introduction: bookData.introduction,
+            tagV3s: bookData.tagV3s || [],
+            chapterCount: bookData.chapterCount,
+            playCount: bookData.playCount,
+            isEnd: bookData.isEnd ?? bookData.bookStatus,
+            payChapterNum: bookData.payChapterNum,
+            totalEpisodes: bookData.totalEpisodes ?? bookData.chapterCount,
+            corner: bookData.corner
+        };
+
+        const rawRecs = data?.data?.recommendList;
+        const recommendList = Array.isArray(rawRecs)
+            ? rawRecs
+            : (rawRecs?.records || []);
+        const recommendations = recommendList.map((item) => ({
+            id: item.bookId,
+            bookId: item.bookId,
+            bookName: item.bookName,
+            cover: item.cover,
+            coverWap: item.coverWap,
+            introduction: item.introduction,
+            chapterCount: item.chapterCount,
+            playCount: item.playCount,
+            tagV3s: item.tagV3s || [],
+            status: item.isEnd === 1 ? 'completed' : 'ongoing',
+            corner: item.corner
+        }));
+
+        console.log('[detail] success', {
+            bookId: detail.bookId,
+            bookName: detail.bookName,
+            recs: recommendations.length
+        });
+
+        const responseData = { detail, recommendations };
+        this.setCached(cacheKey, responseData, 600);
+        return this.buildResponse(true, responseData);
+    } catch (error) {
+        console.log('[detail] unhandled', error.message);
+        return this.handleError(error, 'fetch drama detail');
     }
+}
 
     async getBookMetaFromBatchLoad(bookId) {
         const batch = await this.sapiRequest(Endpoints.BATCH_LOAD, {
